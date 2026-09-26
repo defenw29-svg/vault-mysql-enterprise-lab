@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-app
+  labels:
+    app: vault-mysql
+    version: v3
+    owner: ivan-ajenjo
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: enterprise-app
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "app-role"
+        vault.hashicorp.com/agent-inject-secret-db-creds: "database/creds/app-ro"
+        vault.hashicorp.com/agent-inject-template-db-creds: |
+          {{- with secret "database/creds/app-ro" -}}
+          export DB_USER="{{ .Data.username }}"
+          export DB_PASS="{{ .Data.password }}"
+          export DB_TTL="{{ .Data.ttl }}"
+          {{- end }}
+      labels:
+        app: enterprise-app
+    spec:
+      serviceAccountName: vault-auth
+      containers:
+        - name: app
+          image: ivan-ajenjo/enterprise-app:v3
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: "mysql-service"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-app-svc
+spec:
+  selector:
+    app: enterprise-app
+  ports:
+    - port: 80
+      targetPort: 8000

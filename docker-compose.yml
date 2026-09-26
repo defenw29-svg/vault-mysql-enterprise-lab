@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: vault-bunker
+    cap_add: [IPC_LOCK]
+    ports: ["8200:8200"]
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root-ivan-v3
+      VAULT_DEV_LISTEN_ADDRESS: "0.0.0.0:8200"
+    volumes:
+      - ./vault/policy-app.hcl:/vault/config/policy.hcl
+    command: server -dev -dev-root-token-id=root-ivan-v3
+    networks: [enterprise-net]
+
+  mysql-primary:
+    image: mysql:8.0
+    container_name: mysql-motores-primary
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret_v3
+      MYSQL_DATABASE: enterprise_db
+    ports: ["3307:3306"]
+    networks: [enterprise-net]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+
+  app:
+    build: ./app
+    depends_on: [vault, mysql-primary]
+    environment:
+      VAULT_ADDR: http://vault:8200
+      VAULT_ROLE: app-role
+      DB_HOST: mysql-primary
+    networks: [enterprise-net]
+
+networks:
+  enterprise-net:
+    driver: bridge
