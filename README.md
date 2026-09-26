@@ -1,5 +1,7 @@
 # VAULT MYSQL ENTERPRISE LAB v3
 > IVAN AJENJO — Secure Dynamic Credentials Architecture
+> 
+> <img width="2048" height="1152" alt="image_20260926_180701" src="https://github.com/user-attachments/assets/b0a7ad33-5a03-4a23-a1e5-69eb00e73949" />
 
 ## [0] VISIÓN ENTERPRISE
 Laboratorio de nivel productivo que elimina secretos estáticos. Zero Trust by design.
