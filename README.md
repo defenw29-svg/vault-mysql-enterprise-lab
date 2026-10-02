@@ -22,6 +22,35 @@ Laboratorio de nivel productivo que elimina secretos estáticos. Zero Trust by d
    |               ^  | TTL 15m
    +--deploy--> [K8s Pod + Agent Sidecar] --dynamic creds--+
 ```
+### 🚀 Cómo arrancar el laboratorio desde la máquina anfitriona (Tu PC)
+
+Sigue estos pasos en la terminal de tu sistema operativo (Linux, macOS o WSL en Windows) para levantar todo el entorno de confianza cero de forma 100% automatizada:
+
+**1. Clonar el repositorio y acceder al directorio**
+```bash
+git clone https://github.com
+cd laboratorio-empresarial-de-MySQL-de-boveda
+```
+
+**2. Asegurar permisos de ejecución para el script automatizador**
+Antes de levantar la infraestructura, es necesario otorgarle permisos de ejecución al script local para que Docker pueda ejecutarlo correctamente:
+```bash
+chmod +x ./scripts/vault-init.sh
+```
+
+**3. Desplegar la infraestructura con Docker Compose**
+Lanza el entorno completo. Docker Compose se encargará de gestionar el ciclo de vida y el orden de arranque de forma inteligente gracias a las condiciones de salud (*healthchecks*):
+```bash
+docker compose up --build
+```
+
+**4. ¿Qué ocurre entre bastidores de forma automática?**
+* **`mysql_master`** inicia su aprovisionamiento y activa su verificación de salud interna.
+* **`vault_bunker`** arranca en modo desarrollo, autodesellado y exponiendo el puerto `8200`.
+* **`vault_init`** se acopla a la red de Vault, comprueba mediante Netcat que MySQL ya acepta conexiones y valida que la API de Vault responda correctamente.
+* El script ejecuta de un tirón el aprovisionamiento: habilita el motor `database`, registra el *plugin* de MySQL, crea las políticas y los roles dinámicos con **TTL de 15 minutos**, e imprime una credencial de prueba en los logs.
+* **`app_enterprise_agent`** detecta que la inicialización ha terminado con éxito (`service_completed_successfully`) e inicia de forma segura sin secretos cableados en el repositorio.
+
 
 ## Quick Start
 `docker compose up --build`
