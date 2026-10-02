@@ -6,8 +6,6 @@
 ## [0] VISIÓN ENTERPRISE
 Laboratorio de nivel productivo que elimina secretos estáticos. Zero Trust by design.
 
-<img width="1920" height="1280" alt="833764345_1131819572637670_5838256882613986189_n-solo-en-3d-titulo-y-autor" src="https://github.com/user-attachments/assets/84fd1b78-6b74-4130-b907-b8dea35eb647" />
-
 ### Componentes Core
 1.  **Kubernetes Orquestador** [K8S] — Orquesta despliegues, auto-healing, secretos efímeros vía Vault Agent Injector.
 2.  **CI/CD Pipeline** [GH Actions] — Build -> Test -> Vault Auth (JWT) -> Deploy. Sin .env en repo.
