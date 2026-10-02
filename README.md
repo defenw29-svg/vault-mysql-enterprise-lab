@@ -1,5 +1,5 @@
 # VAULT MYSQL ENTERPRISE LAB v3
-> IVAN AJENJO — Secure Dynamic Credentials Architecture
+> IVAN AJENJO MORALES — Secure Dynamic Credentials Architecture
 > 
 > <img width="2048" height="1152" alt="image_20260926_180701" src="https://github.com/user-attachments/assets/b0a7ad33-5a03-4a23-a1e5-69eb00e73949" />
 
@@ -27,4 +27,4 @@ Laboratorio de nivel productivo que elimina secretos estáticos. Zero Trust by d
 `docker compose up --build`
 Vault UI: http://localhost:8200 | MySQL: 3307
 
-Autor: IVAN AJENJO — v3 Enterprise
+Autor: IVAN AJENJO MORALES — v3 Enterprise
