@@ -1,0 +1,44 @@
+services:
+  # 1. Base de datos MySQL (Principal)
+  mysql-master:
+    image: mysql:8.0
+    container_name: mysql_master
+    environment:
+      MYSQL_ROOT_PASSWORD: root_bunker_password
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_master_data:/var/lib/mysql
+
+  # 2. Bóveda de Seguridad (HashiCorp Vault)
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: vault_bunker
+    ports:
+      - "8200:8200"
+    # Solución al fallo 1: Comando correcto para arrancar en modo dev escuchando en todas las interfaces
+    command: server -dev -dev-listen-address=0.0.0.0:8200
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: "root_token_laboratorio"
+    # Solución al fallo 2: Se eliminan las variables de entorno inexistentes
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - vault_data:/vault/file
+
+  # 3. Tu aplicación / Agente
+  app-enterprise:
+    build: .
+    container_name: app_enterprise_agent
+    environment:
+      - VAULT_ADDR=http://vault:8200
+      - VAULT_TOKEN=root_token_laboratorio
+    depends_on:
+      - mysql-master
+      - vault
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql_master_data:
+  vault_data:
