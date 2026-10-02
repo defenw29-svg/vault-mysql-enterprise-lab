@@ -1,0 +1,76 @@
+# =========================================================================
+# 5. AUTOMATIZADOR: JOB DE CONFIGURACIÓN INICIAL DE VAULT (FINAL PRODUCCIÓN)
+# =========================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vault-init-job
+  namespace: default
+spec:
+  backoffLimit: 5 
+  template:
+    metadata:
+      labels:
+        app: vault-init-job
+    spec:
+      serviceAccountName: app-enterprise-sa 
+      restartPolicy: OnFailure
+      containers:
+        - name: vault-init
+          image: hashicorp/vault:1.15
+          environment:
+            - name: VAULT_ADDR
+              value: "http://vault:8200"
+            - name: VAULT_TOKEN
+              value: "root_token_laboratorio"
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Esperando a que el servicio de Vault esté listo..."
+              until vault status -address=http://vault:8200 > /dev/null 2>&1; do
+                sleep 2
+              done
+
+              echo "1. Habilitando el motor de secretos de bases de datos..."
+              vault secrets enable -address=http://vault:8200 database || true
+
+              echo "2. Configurando conexión dinámica hacia MySQL..."
+              vault write -address=http://vault:8200 database/config/mysql-bunker \
+                  plugin_name=mysql-database-plugin \
+                  connection_url="{{username}}:{{password}}@tcp(mysql-master:3306)/app" \
+                  allowed_roles="app_ro_role" \
+                  username="root" \
+                  password="root_bunker_password"
+
+              echo "3. Definiendo el rol dinámico con la macro {{name}}..."
+              vault write -address=http://vault:8200 database/roles/app_ro_role \
+                  db_name=mysql-bunker \
+                  creation_statements="CREATE USER '{{name}}'@'%' IDENTIFIED BY '{{password}}'; GRANT SELECT ON app.* TO '{{name}}'@'%';" \
+                  default_ttl="15m" \
+                  max_ttl="30m"
+
+              echo "4. Habilitando el método de autenticación de Kubernetes..."
+              vault auth enable -address=http://vault:8200 kubernetes || true
+
+              echo "5. Configurando la confianza mutua real con la API del clúster..."
+              # Solución definitiva: Apuntar al host real de la API de K8s pasando el token y el CA montados en el Pod
+              vault write -address=http://vault:8200 auth/kubernetes/config \
+                  kubernetes_host="https://kubernetes.default.svc:443" \
+                  kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt \
+                  token_reviewer_jwt=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+
+              echo "6. Creando la política ACL para la lectura de credenciales..."
+              vault policy write -address=http://vault:8200 app-read-mysql - <<EOF
+              path "database/creds/app_ro_role" {
+                capabilities = ["read"]
+              }
+              EOF
+
+              echo "7. Creando el rol de Kubernetes vinculado a la ServiceAccount..."
+              vault write -address=http://vault:8200 auth/kubernetes/role/app_ro_role \
+                  bound_service_account_names=app-enterprise-sa \
+                  bound_service_account_namespaces=default \
+                  policies=app-read-mysql \
+                  ttl=15m
+              
+              echo "¡Inicialización completa de la arquitectura de confianza cero en producción!"
